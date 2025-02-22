@@ -1,0 +1,20 @@
+
+#úprava stáhnutého souboru - smazání sloupců - jen základ, přidám k tomu počítání profitu atd. a pak to všem dám do jednoho kodu
+import openpyxl
+
+# Vstupní a výstupní soubory
+input_path = r"C:\Users\m_ble\Desktop\programování\data k akciím\stocks3.xlsx"
+output_path = r"C:\Users\m_ble\Desktop\programování\data k akciím\stocks3adj.xlsx"
+
+# Otevření Excel souboru
+wb = openpyxl.load_workbook(input_path)
+
+# Iterace přes všechny listy a smazání druhého sloupce
+for sheet_name in wb.sheetnames:
+    ws = wb[sheet_name]
+    ws.delete_cols(3,4)  # smazání čtyři sloupců od třetího sloupce (C)
+
+# Uložení upraveného souboru
+wb.save(output_path)
+
+print("uloženo")
