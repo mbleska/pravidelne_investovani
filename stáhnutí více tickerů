@@ -1,0 +1,20 @@
+#stahne akciova data pro dané akcie, v daném období, interval jeden měsíc, uloží jako xlsx
+import yfinance as yf
+import pandas as pd
+
+# List of tickers to download
+tickers = ["BAC", "C", "JPM", "V", "MA", "PYPL", "WFC"]
+
+# Define the output Excel file
+output_path = r"C:\Users\m_ble\Desktop\programování\data k akciím\stocks3.xlsx"
+
+# Create an Excel writer
+with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+    for ticker in tickers:
+        # Download data
+        data = yf.download(ticker, start="2016-01-01", end="2025-02-14", interval = "1mo")
+        
+        # Save each ticker's data to a separate sheet
+        data.to_excel(writer, sheet_name=ticker)
+
+print("Download complete. Data saved to:", output_path)
