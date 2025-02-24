@@ -1,20 +1,89 @@
-
-#úprava stáhnutého souboru - smazání sloupců - jen základ, přidám k tomu počítání profitu atd. a pak to všem dám do jednoho kodu
 import openpyxl
+from openpyxl.styles import numbers
 
 # Vstupní a výstupní soubory
-input_path = r"C:\Users\m_ble\Desktop\programování\data k akciím\stocks3.xlsx"
-output_path = r"C:\Users\m_ble\Desktop\programování\data k akciím\stocks3adj.xlsx"
+input_path = r"C:\Users\m_ble\Desktop\programování\data k akciím\stocks4.xlsx"
+output_path = r"C:\Users\m_ble\Desktop\programování\data k akciím\stocks4adj.xlsx"
 
+investovat = 100
+#seznam tickerů (vlastně i jména listů), až kod budu dávat dohromady se stahováním, tak to můžu smazat, pač to bude ve "stahovací" části
+tickers = ["MSFT", "AMZN", "META", "AAPL", "GOOG", "NVDA", "TSLA", "SPY"]
 # Otevření Excel souboru
 wb = openpyxl.load_workbook(input_path)
 
-# Iterace přes všechny listy a smazání druhého sloupce
-for sheet_name in wb.sheetnames:
+# Iterace přes všechny listy
+for sheet_name in wb.sheetnames:#sheetnames je zabudovaná fce, která vrátí seznam listů v sešitu
     ws = wb[sheet_name]
     ws.delete_cols(3,4)  # smazání čtyři sloupců od třetího sloupce (C)
 
+    for cell in ws["A"]:  # Iterace přes všechny buňky ve sloupci A
+        cell.number_format = "DD/MM/YY" # Nastavení formátu buňky
+    #pojmenování buněk
+    ws["B3"] = "Cena"
+    ws["C1"] = "investice:"
+    ws["D1"] = investovat
+    ws["C2"] = "akutální:"
+    ws["D2"] = ws[f"B{ws.max_row}"].value
+    ws["D2"].number_format = "0.0"
+    ws["C3"] = "#akcií"
+    ws["D3"] = "p/l akcie"
+    ws["E3"] = "p/l pozice"
+    ws["E1"] = "# akcie:"
+    ws["E2"] = "p/l celkem:"
+   
+    for i in range (4,ws.max_row+1):
+        ws[f"C{i}"] = f"=D1/B{i}"
+    for i in range (4,ws.max_row+1):
+        ws[f"D{i}"] = f"=D2-B{i}"
+    for i in range (4,ws.max_row+1):
+        ws[f"E{i}"] = f"=D{i}*C{i}"
+        
+    #zajistí, aby do poslední buňky v C šla nula, tzn v aktuálním týdnu už nekupuju akcie
+    ws[f"C{ws.max_row}"] = 0
+
+    #sečtení sloupečku s akciema a p/l - ale byl tam nějakej error a nechápu, proč v jednom mám +1 a ve druhým je -1, je to zvláštní, ale funguje to
+    ws[f"C{ws.max_row+1}"] = f"=SUM(C4:C{ws.max_row})"
+    ws[f"E{ws.max_row}"] = f"=SUM(E4:E{ws.max_row-1})"
+    #ws[f"E{ws.max_row+1}"] = f"=SUM(E4:E{ws.max_row})"
+
+    #naformátování sloupců pomocí for
+    columns_to_format = ["B", "C", "D", "E", "F"]    
+    for col in columns_to_format:
+        for cell in ws[col]:
+            cell.number_format = "0.0"
+
+    ws["F1"] = ws[f"C{ws.max_row}"].value
+    ws["F2"] = ws[f"E{ws.max_row}"].value
+
+#vytvoření listu Results a pojmenování buněk v hlavičce
+ws_results = wb.create_sheet(title = "Results")
+ws_results["A1"] = "List"
+ws_results["B1"] = "p/l"
+ws_results["C1"] = "#shares"
+
+#vyplnění buněk akcie/pl/#shares
+for index, ticker in enumerate(tickers, start=1):  
+    ws_results[f"A{index+1}"] = f"{ticker}"  # Sheet name
+    ws_results[f"B{index+1}"] = f"='{ticker}'!F2" # Reference to p/l in a sheet
+    ws_results[f"C{index+1}"] = f"='{ticker}'!F1" # Reference to # shares in a sheet
+columns_to_format = ["B", "C"]    
+for col in columns_to_format:
+    for cell in ws_results[col]:
+        cell.number_format = "0.0"
+
+#vytvoření listu "help" kam nahraji close ze všech listů - pro vytvoření tabulky musí být data v jednom listu
+ws_help = wb.create_sheet("Help")
+col_index = 1
+for ticker in tickers:
+    ws = wb[ticker]
+    data = [cell.value for cell in ws["B"][3:ws.max_row]]
+    for i, value in enumerate(data):
+        ws_help.cell(row=i + 1, column=col_index, value=value)
+    ws_help.cell(row=1, column=col_index, value=ticker)
+    col_index += 1
+
 # Uložení upraveného souboru
 wb.save(output_path)
+
 
 print("uloženo")
